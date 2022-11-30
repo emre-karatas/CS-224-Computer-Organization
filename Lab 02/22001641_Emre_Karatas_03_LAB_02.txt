@@ -1,0 +1,214 @@
+CS224
+Lab 02
+Section 03
+Emre Karataş
+22001641
+13.10.2022
+
+---- Lab Work ----
+.data
+sizePrompt: .asciiz "Enter the size of array:(max 10) "
+size: .word 0
+array: .space 40
+minPrompt: .asciiz "Minimum value is: "
+maxPrompt: .asciiz "Maximum value is: "
+afterSorting: .asciiz "Sorted array is: "
+newLine: .asciiz "\n"
+seperator: .asciiz " "
+arrayPrompt: .asciiz "Array is: "
+continuePrompt: .asciiz "Do you want to exit? If yes, enter -10."
+continueSelection: .word 0
+
+
+.text
+main:
+	#size getting
+	la $a0,sizePrompt
+	li $v0,4
+	syscall
+	
+	#reading size
+	li $v0,5
+	syscall
+	
+	#saving size
+	sw $v0,size
+	ble $v0,$zero,main
+	
+	#dynamic allocation
+	li $v0,9
+	li $a0,40
+	
+	move $s0,$v0
+	
+	jal monitor
+	la $a0,newLine
+	li $v0,4
+	syscall
+	jal bubbleSort
+	
+	
+monitor:
+	la $a0,array
+	lw $s1,size
+	#counter
+	addi $t1,$zero,0
+	loop:
+		#reading value
+		li $v0,5
+		syscall
+		#saving value
+		sw $v0,0($a0)
+		#incrementing the pointer
+		addi $a0,$a0,4
+		addi $t1,$t1,1
+		#loop condition
+		blt $t1,$s1,loop
+	la $a0,arrayPrompt
+	li $v0,4
+	syscall
+	la $a0,array
+	move $t0,$a0
+	lw $s1,size
+	addi $t1,$zero,0
+	#printing the array
+	continue:
+		lw $a0,0($t0)
+		addi $t0,$t0,4
+		li $v0,1
+		syscall
+		la $a0,seperator
+		li $v0,4
+		syscall
+	
+	#counter
+	addi $t1,$t1,1
+	blt $t1,$s1,continue
+	addi $t0,$t0,4
+	jr $ra
+	
+	
+bubbleSort:
+	outerLoop:
+		#reduce 1
+		subi $a1,$t1,1   
+		#if the value is lower than 0            
+    		blez $a1,printArray
+    		#load array
+		la $a0,array
+		#go to loop
+		jal innerLoop
+		#reduce 1 
+		subi $t1,$t1,1
+		j outerLoop
+		innerLoop:
+			iterating:
+				#load values
+				lw $s1,0($a0)
+				lw $s2,4($a0)
+				#if small, swap it
+				blt $s1,$s2,swap
+				#else move to next element
+				bgt $s1,$s2,nextElement
+				beq $s1,$s2,nextElement
+			swap:
+				#change pointers
+				sw $s1,4($a0)
+				sw $s2,0($a0)
+				#go next element
+				j nextElement
+			nextElement:
+				#increase pointer
+				addiu $a0,$a0,4
+				#decrease loop count
+				subiu $a1,$a1,1
+				#if still, continue iterate
+				bgt $a1,$zero,iterating
+				jr $ra
+
+	printArray:
+	#variables
+	la $a0,array
+	move $t0,$a0
+	lw $s1,size
+	addi $t1,$zero,0
+	lw $s5,0($t0)
+	
+	#prompt printing
+	la $a0,afterSorting
+	li $v0,4
+	syscall
+	#printing the array
+	continue2:
+		lw $a0,0($t0)
+		addi $t0,$t0,4
+		li $v0,1
+		syscall
+		la $a0,seperator
+		li $v0,4
+		syscall
+	
+	#counter
+	addi $t1,$t1,1
+	blt $t1,$s1,continue2
+	
+	#newline
+	la $a0,newLine
+	li $v0,4
+	syscall
+	
+	#min value
+	subi $t0,$t0,4
+	lw $s4,0($t0)
+	
+	#min prompt
+	la $a0,minPrompt
+	li $v0,4
+	syscall
+	
+	#printing min
+	move $a0,$s4
+	li $v0,1
+	syscall
+	
+	#newline
+	la $a0,newLine
+	li $v0,4
+	syscall
+	
+	#max prompt
+	la $a0,maxPrompt
+	li $v0,4
+	syscall
+	
+	#printing max
+	move $a0,$s5
+	li $v0,1
+	syscall
+	
+	#newline
+	la $a0,newLine
+	li $v0,4
+	syscall
+	
+	#continue prompt
+	la $a0,continuePrompt
+	li $v0,4
+	syscall
+	
+	#selection getting and saving
+	li $v0,5
+	syscall
+	sw $v0,continueSelection
+	
+	#checking if selection equals to -10
+	addi $t9,$zero,-10
+	move $s7,$v0
+	beq $s7,$t9,exit
+	#else go back to main
+	j main
+exit:
+	#exiting
+	li $v0,10
+	syscall
+
